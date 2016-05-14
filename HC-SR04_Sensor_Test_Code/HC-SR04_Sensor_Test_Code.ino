@@ -22,7 +22,7 @@ void setup() {
 
 void loop() {
   // Clears the trigPin, so when it starts it is 'off'
-  digitalWrite(trigPin, HIGH);
+  digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
 
   /* Sets the trigPin on HIGH state for 10 microseconds, then turns it 'off.' 
@@ -39,20 +39,19 @@ void loop() {
   took to be echoed back, since it was triggered, and uses the standard
   speed of sound in air (a constant) to convert time to distance 
   (velocity/time = distance). */
-   cm = ((duration/2)/29); 
+   cm = microsecondsToCentimeters(duration); 
 
    // Finally, this prints the distance on the serial monitor.
    Serial.print("cm: ");
    Serial.println(cm);
-
 }
 
 /* This function is called on by the distance converter in the void loop().
- *  It calculates the distance by converting microseconds to centimeters.  
-    * The speed of sound is 340 m/s, which is 29 microseconds per 
-    * centimeter. Since the ping is sent out and then bounced back,
-    * the true distance is half the recieved distance. 
+ * It calculates the distance by converting microseconds to centimeters.  
+ * The speed of sound is 340 m/s, which is 29 microseconds per 
+ * centimeter. Since the ping is sent out and then bounced back,
+ * the true distance is half the recieved distance.*/ 
 long microsecondsToCentimeters(long microseconds){
-  return (microseconds/2)/29;
-}*/
+  return microseconds /2 /29;
+}
 
