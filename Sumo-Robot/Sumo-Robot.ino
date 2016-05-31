@@ -46,7 +46,6 @@ int in4 = 4;
 #define irSensorPinL A0
 #define irSensorPinC A1
 #define irSensorPinR A2
-
 /* The purpose of this function is to calibrate the IR sensors for the comparative cases. 
  * The front and back IR sensors will be compared to the center one and which color
  * it detects. There will be two colors to the arena, the border color and the arena color,
@@ -70,18 +69,26 @@ int black = 0;
 void irSensors(); 
 void swerve();  // If the back IR sensor detects a color change
 void halt();  // If the front IR sensor detects a color change
-
+/* Here I defined the function and variables that is responsible for the ultrasonic sensors 
+ * and how the Sumo should do in response. Since the robots will be placed back to back, 
+ * I need my Sumo to spin until the center ultrasonic sensor detects an object in front of it.
+ * Then I need the Sumo to proceed directly towards that sensed object. 
+ */
+void locateOpponent();
+void ramOpponent();
+long durationL, durationC, durationR, distanceL, distanceC, distanceR;
+long microsecondsToCentimeters(long microseconds);
 
 void setup() {
   /* Here I defined what type of pin each one was, output means the Arduino sends out a 
    * signal via that pin, while input means the Arduino recieves a signal via that pin.
    */
-pinMode(irLedPinC, OUTPUT);
-pinMode(irSensorPinC, INPUT);
-pinMode(irLedPinL, OUTPUT);
-pinMode(irSensorPinL, INPUT);
-pinMode(irLedPinR, OUTPUT);
-pinMode(irSensorPinR, OUTPUT);
+pinMode(irLedPinC, OUTPUT), pinMode(irSensorPinC, INPUT);
+pinMode(irLedPinL, OUTPUT), pinMode(irSensorPinL, INPUT);
+pinMode(irLedPinR, OUTPUT), pinMode(irSensorPinR, INPUT);
+pinMode(trigPinL, OUTPUT), pinMode(echoPinL, INPUT);
+pinMode(trigPinC, OUTPUT), pinMode(echoPinC, INPUT);
+pinMode(trigPinR, OUTPUT), pinMode(echoPinR, INPUT);
 
 Serial.begin(9600);
 //This function call is in the setup because it only needs to be run once and that is at the beginning.
@@ -89,8 +96,33 @@ CalibrateIR();
 }
 
 void loop() {
-irSensors();  
-
+  /* This clears the trigPins so that they start with 'off,' that way the first ultrasonic
+   *  signal sent is easier to detect the beginning and end of.
+   */
+  digitalWrite(trigPinL, LOW), digitalWrite(trigPinC, LOW), digitalWrite(trigPinR, LOW);
+  delayMicroseconds(2);
+  /* This sets the trigPins on HIGH (on) state for 10 microseconds, then it is turned 
+   * off again. This is the ultrasonic ping that the sensors send out.
+   */
+  digitalWrite(trigPinL, HIGH), digitalWrite(trigPinC, HIGH), digitalWrite(trigPinR, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPinL, LOW), digitalWrite(trigPinC, LOW), digitalWrite(trigPinR, LOW);
+  /* Times how long the ping took to return, using the echoPin, in microseconds. It times how 
+   * long it takes before it hears the echo that the trigger pin sent out. */
+  durationL = pulseIn(echoPinL, HIGH);
+  durationC = pulseIn(echoPinC, HIGH);
+  durationR = pulseIn(echoPinR, HIGH);
+  /* This is the time to distance converter. It takes how long the ping
+  took to be echoed back, since it was triggered, and uses the standard
+  speed of sound in air (a constant) to convert time to distance 
+  (velocity/time = distance). */
+  distanceL = microsecondsToCentimeters(durationL);
+  distanceC = microsecondsToCentimeters(durationC);
+  distanceR = microsecondsToCentimeters(durationR); 
+  /* This calls on the function that takes the measured distances and sees if they compare to a given range.
+   * This way Sumo will know if there is an object between it and the determined range. */
+  locateOpponent(distanceL, distanceC, distanceR);
+  irSensors();  
 
 }
 
@@ -136,7 +168,7 @@ void irSensors(){
   int halfPeriodF = 13;
   int cyclesF = 38;
   int j;
-  for (j=0; j <= cycles; j++){
+  for (j=0; j <= cyclesF; j++){
     digitalWrite(irLedPinL, HIGH);
     delayMicroseconds(halfPeriodF);
     digitalWrite(irLedPinL, LOW);
@@ -148,7 +180,7 @@ void irSensors(){
   int halfPeriodB = 13;
   int cyclesB = 38;
   int k;
-  for (k=0; k <= cycles; k++){
+  for (k=0; k <= cyclesB; k++){
     digitalWrite(irLedPinR, HIGH);
     delayMicroseconds(halfPeriodF);
     digitalWrite(irLedPinR, LOW);
@@ -158,21 +190,53 @@ void irSensors(){
   
   // Once the information from the sensors has been gathered, I compare them 
   // to the center one and call on the appropriate function if it is not the same.
-  if (fronColor != borderColor){
+  if (frontColor != arenaColor){
     halt();
   } else {
     
   }
-  if (backColor != borderColor){
+  if (backColor != arenaColor){
     swerve();
   } else {
     
   }
 }
 void swerve(){
-  // spin sharply
+  // Spin sharply
 }
 void halt(){
-  // halt the motors and back up a bit
+  // Halt the motors and back up a bit
+}
+void locateOpponent(long distanceL, long distanceC, long distanceR){
+  /*  Here I defined a range that the robot will be sensing in. If the ultrasonic sensors
+   *  doesn't detect something within 2 feet of it (~60 cm) of them, then there is nothing there.
+   *  However, if there is something there, the recorded distance will be shorter than the range and
+   *  Sumo will know there is another robot in the way (denoted by the less than or equal to symbols).
+   *  Since the sensors have a range of 4 meters (400 cm) and the arena is smaller than 4 meters in diameter, 
+   *  I am putting a cap on the range of the sensors so people standing outside of the arena will not 
+   *  interfer with Sumo and its ability to find the other robot; this is where the int range comes from. 
+   */
+   int range = 60;
+   if (distanceC <= range && distanceL > range && distanceR > range){
+    // The center sensor has detected the other robot so full power straight ahead!
+     ramOpponent();
+   } else if (distanceC > range && distanceL <= range && distanceR > range){
+    // Turn left, this comparison means the left sensor has detected robot, so Sumo will turn towards it.
+   } else if (distanceC > range && distanceL > range && distanceR <= range){
+    // Turn right, this comparison means the right sensor has detected a robot
+   } else {
+    
+   }
+}
+void ramOpponent(){
+  // Drive directly towards other robot
+}
+/* This function is called on by the distance converter in the void loop().
+ * It calculates the distance by converting microseconds to centimeters.  
+ * The speed of sound is 340 m/s, which is 29 microseconds per 
+ * centimeter. Since the ping is sent out and then bounced back,
+ * the true distance is half the recieved distance.*/ 
+long microsecondsToCentimeters(long microseconds){
+  return microseconds /2 /29;
 }
 
