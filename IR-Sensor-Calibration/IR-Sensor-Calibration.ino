@@ -40,7 +40,6 @@ void loop(){
    * 1000/26 times, which is rounded to 38 times. Here I used a for loop to ensure 
    * that a the command to turn the LED on and off was looped exactly 38 times.
    */
-// Try turning this into a seperate function.
   int halfPeriod = 13;
   int cycles = 38;
   int i;

@@ -1,6 +1,6 @@
 /* This is the complete code for the Arduino-based Sumo Robot. I wrote it based on my 
  *  understanding of each compmonent, logic, and physics. 
- *  Theory:
+ *  Theory Section (including notes before definitions):
  *  Note that in the first step I defined the pins differently. The motor shields
  *  had to be defined with the 'int =;' method because it is a pin to pin relationship. 
  *  I needed to relate the motor sheild pins to the connected Ardunio pins.
@@ -38,7 +38,7 @@ int in4 = 4;
  * it attached a name to the corresponding analog pin denoted by A0-A5 (A for analog). 
  * These sensors work by turning an LED on and off and using a phototransitor
  * to measure the amount of reflected light. The more light reflected, the more white an
- * object is and the (higher) the voltage across the transitor.
+ * object is and the higher the voltage across the transitor.
  */
 #define irLedPinL A3
 #define irLedPinC A4
@@ -49,18 +49,31 @@ int in4 = 4;
 
 /* The purpose of this function is to calibrate the IR sensors for the comparative cases. 
  * The front and back IR sensors will be compared to the center one and which color
- * it detects. Since there are no paramaters for the function, nothing in the (), then 
- * I assigned the function to a variable.
+ * it detects. There will be two colors in the arena, the border color and the arena color,
+ * so I defined these both. I know that these colors will be opposite of each other, so all
+ * I need to test is the color of the arena, as the robot will be initially placed in the 
+ * center. These are also all 'int' because of the boolean case where true = 1 and false = 0.
+ * As digitalRead() returns the boolean values HIGH or LOW, where HIGH = true, and 
+ * LOW = false, and because of how the phototransitor works, white = HIGH and blakc = LOW.
+ * Thus, white = HIGH = true = 1, and black = LOW = false = 0, allowing me to only need to work
+ * with numbers to simplify the code.
  */
-String CalibrateIR();
-String arenaColor; 
+int CalibrateIR();
+int arenaColor;
+int borderColor;
+int white = 1;
+int black = 0; 
 
 void setup() {
-  // put your setup code here, to run once:
+  /* Here I defined what type of pin each one was, output means the Arduino sends out a 
+   * signal via that pin, while input means the Arduino recieves a signal via that pin.
+   */
 pinMode(irLedPinC, OUTPUT);
 pinMode(irSensorPinC, INPUT);
 
 Serial.begin(9600);
+//This function call is in the setup because it only needs to be run once and that is at the beginning.
+CalibrateIR();
 }
 
 void loop() {
@@ -68,13 +81,43 @@ void loop() {
 
 }
 
-String CalibrateIR(){
+int CalibrateIR(){
 // White = true (1), Black = false (0).
-  if(digitalRead(irSensorPinC)==HIGH){
-    arenaColor = "White";
+  /* First you need to send a faux sinewave to the LED to turn it on and off.
+   * Since a wave with a frequency of 38.5 kHz has a period of about 26 
+   * microseconds, turning it on for half that time would be half a period,
+   * which is where int halfPeriod comes from. The cycles comes from the fact
+   * that these sensors detect the light wave's reflection and you need to pulse
+   * the light multiple times to create a continuous 'wave' that lasts about 
+   * 1 millisecond. Since one crest to crest pulse takes 26 microseconds (13 for 
+   * a half period), and there are 1000 microseconds in a millisecond, you would 
+   * have to turn the LED on and then off (which makes one complete period) 
+   * 1000/26 times, which is rounded to 38 times. Here I used a for loop to ensure 
+   * that a the command to turn the LED on and off was looped exactly 38 times.
+   */
+  int halfPeriod = 13;
+  int cycles = 38;
+  int i;
+  for (i=0; i <= cycles; i++){
+    digitalWrite(A3, HIGH);
+    delayMicroseconds(halfPeriod);
+    digitalWrite(A3, LOW);
+    delayMicroseconds(halfPeriod - 1); 
+  }
+  /* While the LED sent out its wave, the sensor will read it and return a boolean value.
+   * This because digitalRead returns either HIGH or LOW, where HIGH means true and LOW 
+   * means false. In this case HIGH means white and LOW means white. For what HIGH means,
+   * refer back to the theory at the beginning of the code.
+   */
+bool color = digitalRead(irSensorPinC);
+  if(color == true){
+    arenaColor = white;
+    borderColor = black;
   } else {
-    arenaColor = "Black";
+    arenaColor = black;
+    borderColor = white;
   }   
   return arenaColor;
+  return borderColor;
 }
 
