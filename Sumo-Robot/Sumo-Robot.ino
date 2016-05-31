@@ -49,8 +49,8 @@ int in4 = 4;
 
 /* The purpose of this function is to calibrate the IR sensors for the comparative cases. 
  * The front and back IR sensors will be compared to the center one and which color
- * it detects. There will be two colors in the arena, the border color and the arena color,
- * so I defined these both. I know that these colors will be opposite of each other, so all
+ * it detects. There will be two colors to the arena, the border color and the arena color,
+ * but I only need to know the arean because I know that these colors will be opposite of each other. So all
  * I need to test is the color of the arena, as the robot will be initially placed in the 
  * center. These are also all 'int' because of the boolean case where true = 1 and false = 0.
  * As digitalRead() returns the boolean values HIGH or LOW, where HIGH = true, and 
@@ -60,9 +60,17 @@ int in4 = 4;
  */
 int CalibrateIR();
 int arenaColor;
-int borderColor;
 int white = 1;
 int black = 0; 
+/* Here I defined the functions that will hold the code for what the Sumo will do if the 
+ *  front or back IR sensor detects a color that is not the arena color. I also defined a  
+ *  function that will continuously loop so the front and back are constantly sensing, and
+ *  the entire code is simplifed. This function doesn't return anything so it is void.
+ */
+void irSensors(); 
+void swerve();  // If the back IR sensor detects a color change
+void halt();  // If the front IR sensor detects a color change
+
 
 void setup() {
   /* Here I defined what type of pin each one was, output means the Arduino sends out a 
@@ -70,6 +78,10 @@ void setup() {
    */
 pinMode(irLedPinC, OUTPUT);
 pinMode(irSensorPinC, INPUT);
+pinMode(irLedPinL, OUTPUT);
+pinMode(irSensorPinL, INPUT);
+pinMode(irLedPinR, OUTPUT);
+pinMode(irSensorPinR, OUTPUT);
 
 Serial.begin(9600);
 //This function call is in the setup because it only needs to be run once and that is at the beginning.
@@ -77,11 +89,12 @@ CalibrateIR();
 }
 
 void loop() {
-  
+irSensors();  
+
 
 }
 
-int CalibrateIR(){
+int CalibrateIR(){  
 // White = true (1), Black = false (0).
   /* First you need to send a faux sinewave to the LED to turn it on and off.
    * Since a wave with a frequency of 38.5 kHz has a period of about 26 
@@ -99,9 +112,9 @@ int CalibrateIR(){
   int cycles = 38;
   int i;
   for (i=0; i <= cycles; i++){
-    digitalWrite(A3, HIGH);
+    digitalWrite(irLedPinC, HIGH);
     delayMicroseconds(halfPeriod);
-    digitalWrite(A3, LOW);
+    digitalWrite(irLedPinC, LOW);
     delayMicroseconds(halfPeriod - 1); 
   }
   /* While the LED sent out its wave, the sensor will read it and return a boolean value.
@@ -109,15 +122,57 @@ int CalibrateIR(){
    * means false. In this case HIGH means white and LOW means white. For what HIGH means,
    * refer back to the theory at the beginning of the code.
    */
-bool color = digitalRead(irSensorPinC);
-  if(color == true){
+bool colorDetected = digitalRead(irSensorPinC);
+  if(colorDetected == true){
     arenaColor = white;
-    borderColor = black;
   } else {
     arenaColor = black;
-    borderColor = white;
   }   
   return arenaColor;
-  return borderColor;
+}
+void irSensors(){
+  //First is the initilizing code for the front and back IR sensors.
+  // F stands for Front and corresponds to the variables on the front of the robot.
+  int halfPeriodF = 13;
+  int cyclesF = 38;
+  int j;
+  for (j=0; j <= cycles; j++){
+    digitalWrite(irLedPinL, HIGH);
+    delayMicroseconds(halfPeriodF);
+    digitalWrite(irLedPinL, LOW);
+    delayMicroseconds(halfPeriodF - 1); 
+  } 
+  bool frontColor = digitalRead(irSensorPinL);
+  
+  // B stand for Back and corresponds to the variables on the back of the robot.
+  int halfPeriodB = 13;
+  int cyclesB = 38;
+  int k;
+  for (k=0; k <= cycles; k++){
+    digitalWrite(irLedPinR, HIGH);
+    delayMicroseconds(halfPeriodF);
+    digitalWrite(irLedPinR, LOW);
+    delayMicroseconds(halfPeriodF - 1); 
+  } 
+  bool backColor = digitalRead(irSensorPinR);
+  
+  // Once the information from the sensors has been gathered, I compare them 
+  // to the center one and call on the appropriate function if it is not the same.
+  if (fronColor != borderColor){
+    halt();
+  } else {
+    
+  }
+  if (backColor != borderColor){
+    swerve();
+  } else {
+    
+  }
+}
+void swerve(){
+  // spin sharply
+}
+void halt(){
+  // halt the motors and back up a bit
 }
 
