@@ -13,15 +13,19 @@
  *  line and knows what to do when it sees the call; the call line tells the program to 
  *  run the function and return to the call line the value the function evaluated.
  */
-// First off, I defined Motor 1 by entering motor shield pin name and 
-// then the arduino pin number. Here I use the "int =;"
-int enA = 6;
-int in1 = 7;
-int in2 = 2;
-// Next is Motor 2.
-int enB = 5;
-int in3 = 3;
-int in4 = 4;
+/* First off, I defined Motor 1 (A) by entering motor shield pin name and 
+ * then the arduino pin number. Here I use the "int =;" 
+ * enA = speedControlA, enB = speedControlB, in1 = direction1A, and so on.
+ * Note that enA and enB need to be connected to digital pins that have PWM,
+ * which pins 6 and 5 do.
+ */
+int speedControlA = 6;
+int direction1A = 7;
+int direction2A = 2;
+// Next is Motor 2 (B).
+int speedControlB = 5;    
+int direction1B = 3;
+int direction2B = 4;
 /* Next are the Ultrasonic sensors. Here I use the #define method, which names the pin 
  * in the corresponding digital pin that is numbered.
  * L = left side, C = center, R = right side. The sensors work by sending out a
@@ -79,6 +83,7 @@ void ramOpponent();
 long durationL, durationC, durationR, distanceL, distanceC, distanceR;
 long microsecondsToCentimeters(long microseconds);
 
+
 void setup() {
   /* Here I defined what type of pin each one was, output means the Arduino sends out a 
    * signal via that pin, while input means the Arduino recieves a signal via that pin.
@@ -89,6 +94,10 @@ pinMode(irLedPinR, OUTPUT), pinMode(irSensorPinR, INPUT);
 pinMode(trigPinL, OUTPUT), pinMode(echoPinL, INPUT);
 pinMode(trigPinC, OUTPUT), pinMode(echoPinC, INPUT);
 pinMode(trigPinR, OUTPUT), pinMode(echoPinR, INPUT);
+pinMode(speedControlA, OUTPUT), pinMode(speedControlB, OUTPUT);
+pinMode(direction1A, OUTPUT), pinMode(direction1B, OUTPUT);
+pinMode(direction2A, OUTPUT), pinMode(direction2B, OUTPUT);
+
 
 Serial.begin(9600);
 //This function call is in the setup because it only needs to be run once and that is at the beginning.
@@ -202,12 +211,38 @@ void irSensors(){
   }
 }
 void swerve(){
-  // Spin sharply
+  // This spins Sumo sharply at 100% speed. The explanation for the code is in locateOpponent().
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, HIGH);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
+  analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
 }
 void halt(){
-  // Halt the motors and back up a bit
+  // Halt the motors by changing the speed to 0% and then backs up slowly after a delay by reversing the wheels' current flow
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
+  analogWrite(speedControlA, 0), analogWrite(speedControlB, 0);
+  delay(50);
+  digitalWrite(direction1A, LOW), digitalWrite(direction1B, HIGH);
+  digitalWrite(direction2A, HIGH), digitalWrite(direction2B, LOW);
+  analogWrite(speedControlA, 100), analogWrite(speedControlB, 100);
+  delay(500);
 }
 void locateOpponent(long distanceL, long distanceC, long distanceR){
+  /* This code will spin Motor 1 clockwise and Motor 2 clockwise. Since all motors
+   * are created the same, and not as left/right, they will have to be coded opposite of each other 
+   * for the entire robot to move in unison. This is due to the symetry of the motor placement.
+   * However, in this case, we want Sumo to spin. So instead of moving them together, forward, we are
+   * moving them together but in opposite directions. As the front wheel moves forward, the back wheel
+   * will move backwards, causing Sumo to pivot in place. DigitalWrite dictates the direction
+   * of current flow through the motors, in this case it will enter 'pin 1' (HIGH) and exit 
+   * 'pin 2' (LOW). AnalogWrite dictates the speed at which the motor will spin. 255 is the maximum
+   * value that analogWrite can output, so that is 100% speed. I put in a delay so I don't exhaust the motors
+   * with quick direction changes.
+   */
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, HIGH);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
+  analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
+  delay(20);
   /*  Here I defined a range that the robot will be sensing in. If the ultrasonic sensors
    *  doesn't detect something within 2 feet of it (~60 cm) of them, then there is nothing there.
    *  However, if there is something there, the recorded distance will be shorter than the range and
@@ -222,14 +257,25 @@ void locateOpponent(long distanceL, long distanceC, long distanceR){
      ramOpponent();
    } else if (distanceC > range && distanceL <= range && distanceR > range){
     // Turn left, this comparison means the left sensor has detected robot, so Sumo will turn towards it.
+    // The turn is done by changing the speed of the wheel rotation. As one spins faster, it covers more distance so the Sumo will turn.
+    digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
+    digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
+    analogWrite(speedControlA, 100), analogWrite(speedControlB, 255);
    } else if (distanceC > range && distanceL > range && distanceR <= range){
     // Turn right, this comparison means the right sensor has detected a robot
+    digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
+    digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH;
+    analogWrite(speedControlA, 255), analogWrite(speedControlB, 100);
    } else {
     
    }
 }
 void ramOpponent(){
-  // Drive directly towards other robot
+  // Drive directly towards other robot by rotating wheels together at full speed
+  // Note that roational directions are opposite to maintain physical symmetry.
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
+  analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
 }
 /* This function is called on by the distance converter in the void loop().
  * It calculates the distance by converting microseconds to centimeters.  
