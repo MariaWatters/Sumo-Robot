@@ -82,52 +82,68 @@ void locateOpponent();
 void ramOpponent();
 long durationL, durationC, durationR, distanceL, distanceC, distanceR;
 long microsecondsToCentimeters(long microseconds);
-
+long senseDistance(int trigPin, int echoPin);
 
 void setup() {
   /* Here I defined what type of pin each one was, output means the Arduino sends out a 
    * signal via that pin, while input means the Arduino recieves a signal via that pin.
    */
-pinMode(irLedPinC, OUTPUT), pinMode(irSensorPinC, INPUT);
-pinMode(irLedPinL, OUTPUT), pinMode(irSensorPinL, INPUT);
-pinMode(irLedPinR, OUTPUT), pinMode(irSensorPinR, INPUT);
-pinMode(trigPinL, OUTPUT), pinMode(echoPinL, INPUT);
-pinMode(trigPinC, OUTPUT), pinMode(echoPinC, INPUT);
-pinMode(trigPinR, OUTPUT), pinMode(echoPinR, INPUT);
-pinMode(speedControlA, OUTPUT), pinMode(speedControlB, OUTPUT);
-pinMode(direction1A, OUTPUT), pinMode(direction1B, OUTPUT);
-pinMode(direction2A, OUTPUT), pinMode(direction2B, OUTPUT);
+  pinMode(irLedPinC, OUTPUT), pinMode(irSensorPinC, INPUT);
+  pinMode(irLedPinL, OUTPUT), pinMode(irSensorPinL, INPUT);
+  pinMode(irLedPinR, OUTPUT), pinMode(irSensorPinR, INPUT);
+  pinMode(trigPinL, OUTPUT), pinMode(echoPinL, INPUT);
+  pinMode(trigPinC, OUTPUT), pinMode(echoPinC, INPUT);
+  pinMode(trigPinR, OUTPUT), pinMode(echoPinR, INPUT);
+  pinMode(speedControlA, OUTPUT), pinMode(speedControlB, OUTPUT);
+  pinMode(direction1A, OUTPUT), pinMode(direction1B, OUTPUT);
+  pinMode(direction2A, OUTPUT), pinMode(direction2B, OUTPUT);
 
+  // This function call is in the setup because it only needs to be run once and that is at the beginning.
+  CalibrateIR();
 
-Serial.begin(9600);
-//This function call is in the setup because it only needs to be run once and that is at the beginning.
-CalibrateIR();
+  //This is the initial spin that Sumo does 
+  swerve();
+  
+  delay(20);
 }
 
 void loop() {
   /* This clears the trigPins so that they start with 'off,' that way the first ultrasonic
    *  signal sent is easier to detect the beginning and end of.
    */
+   /*
   digitalWrite(trigPinL, LOW), digitalWrite(trigPinC, LOW), digitalWrite(trigPinR, LOW);
   delayMicroseconds(2);
+  */
   /* This sets the trigPins on HIGH (on) state for 10 microseconds, then it is turned 
    * off again. This is the ultrasonic ping that the sensors send out.
    */
+   /*
   digitalWrite(trigPinL, HIGH), digitalWrite(trigPinC, HIGH), digitalWrite(trigPinR, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPinL, LOW), digitalWrite(trigPinC, LOW), digitalWrite(trigPinR, LOW);
+  */
   /* Times how long the ping took to return, using the echoPin, in microseconds. It times how 
    * long it takes before it hears the echo that the trigger pin sent out. */
+   /*
   durationL = pulseIn(echoPinL, HIGH);
   durationC = pulseIn(echoPinC, HIGH);
   durationR = pulseIn(echoPinR, HIGH);
+  */
   /* This is the time to distance converter. It takes how long the ping
   took to be echoed back, since it was triggered, and uses the standard
   speed of sound in air (a constant) to convert time to distance 
   (velocity/time = distance). */
+  /*
   distanceL = microsecondsToCentimeters(durationL);
   distanceC = microsecondsToCentimeters(durationC);
   distanceR = microsecondsToCentimeters(durationR); 
+  */
+
+  distanceL = senseDistance(trigPinL, echoPinL);
+  distanceC = senseDistance(trigPinC, echoPinC);
+  distanceR = senseDistance(trigPinR, echoPinR); 
+  
   /* This calls on the function that takes the measured distances and sees if they compare to a given range.
    * This way Sumo will know if there is an object between it and the determined range. */
   locateOpponent(distanceL, distanceC, distanceR);
@@ -135,8 +151,39 @@ void loop() {
 
 }
 
-int CalibrateIR(){  
-// White = true (1), Black = false (0).
+long senseDistance(int trigPin, int echoPin)
+{
+  long duration;
+  long distance;
+  
+  /* This clears the trigPin so that they start with 'off,' that way the first ultrasonic
+   *  signal sent is easier to detect the beginning and end of.
+   */
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  
+  /* This sets the trigPin on HIGH (on) state for 10 microseconds, then it is turned 
+   * off again. This is the ultrasonic ping that the sensors send out.
+   */
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  /* Times how long the ping took to return, using the echoPin, in microseconds. It times how 
+   * long it takes before it hears the echo that the trigger pin sent out. */
+  duration = pulseIn(echoPin, HIGH);
+  
+  /* This is the time to distance converter. It takes how long the ping
+  took to be echoed back, since it was triggered, and uses the standard
+  speed of sound in air (a constant) to convert time to distance 
+  (velocity/time = distance). */
+  distance = microsecondsToCentimeters(duration);
+
+  return distance;
+}
+
+bool readSensorColor(int irLedPin, int irSensorPin)
+{
   /* First you need to send a faux sinewave to the LED to turn it on and off.
    * Since a wave with a frequency of 38.5 kHz has a period of about 26 
    * microseconds, turning it on for half that time would be half a period,
@@ -151,11 +198,12 @@ int CalibrateIR(){
    */
   int halfPeriod = 13;
   int cycles = 38;
-  int i;
-  for (i=0; i <= cycles; i++){
-    digitalWrite(irLedPinC, HIGH);
+  int j;
+  
+  for (j=0; j <= cycles; j++){
+    digitalWrite(irLedPin, HIGH);
     delayMicroseconds(halfPeriod);
-    digitalWrite(irLedPinC, LOW);
+    digitalWrite(irLedPin, LOW);
     delayMicroseconds(halfPeriod - 1); 
   }
   /* While the LED sent out its wave, the sensor will read it and return a boolean value.
@@ -163,39 +211,28 @@ int CalibrateIR(){
    * means false. In this case HIGH means white and LOW means white. For what HIGH means,
    * refer back to the theory at the beginning of the code.
    */
-bool colorDetected = digitalRead(irSensorPinC);
-  if(colorDetected == true){
-    arenaColor = white;
-  } else {
-    arenaColor = black;
-  }   
-  return arenaColor;
+  bool sensorColor = digitalRead(irSensorPin);
+  return sensorColor;
 }
+
+int CalibrateIR(){  
+// White = true (1), Black = false (0).
+
+    bool colorDetected = readSensorColor(irLedPinC, irSensorPinC);
+    
+    if (colorDetected == true){
+      arenaColor = white;
+    } else {
+      arenaColor = black;
+    }   
+    return arenaColor;
+}
+
 void irSensors(){
-  //First is the initilizing code for the front and back IR sensors.
-  // F stands for Front and corresponds to the variables on the front of the robot.
-  int halfPeriodF = 13;
-  int cyclesF = 38;
-  int j;
-  for (j=0; j <= cyclesF; j++){
-    digitalWrite(irLedPinL, HIGH);
-    delayMicroseconds(halfPeriodF);
-    digitalWrite(irLedPinL, LOW);
-    delayMicroseconds(halfPeriodF - 1); 
-  } 
-  bool frontColor = digitalRead(irSensorPinL);
+  // The front sensor corrisponds to the 'left' and the back one to the 'right' side.
   
-  // B stand for Back and corresponds to the variables on the back of the robot.
-  int halfPeriodB = 13;
-  int cyclesB = 38;
-  int k;
-  for (k=0; k <= cyclesB; k++){
-    digitalWrite(irLedPinR, HIGH);
-    delayMicroseconds(halfPeriodF);
-    digitalWrite(irLedPinR, LOW);
-    delayMicroseconds(halfPeriodF - 1); 
-  } 
-  bool backColor = digitalRead(irSensorPinR);
+  bool frontColor = readSensorColor(irLedPinL, irSensorPinL);
+  bool backColor = readSensorColor(irLedPinR, irSensorPinR);
   
   // Once the information from the sensors has been gathered, I compare them 
   // to the center one and call on the appropriate function if it is not the same.
@@ -210,23 +247,28 @@ void irSensors(){
     
   }
 }
+
 void swerve(){
-  // This spins Sumo sharply at 100% speed. The explanation for the code is in locateOpponent().
-  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, HIGH);
-  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
-  analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
-}
-void halt(){
-  // Halt the motors by changing the speed to 0% and then backs up slowly after a delay by reversing the wheels' current flow
+  // This spins Sumo sharply while giving it additional translational motion by making one wheel spin slightly slower than the other.
+  // The explanation for the code is in locateOpponent().
+
   digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
   digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
-  analogWrite(speedControlA, 0), analogWrite(speedControlB, 0);
+  analogWrite(speedControlA, 255), analogWrite(speedControlB, 225);
+}
+
+void halt(){
+  // Halt the motors by stopping the current flow through the motors and then backs up slowly after a delay by reversing the wheels' current flow
+  digitalWrite(direction1A, LOW), digitalWrite(direction1B, LOW);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
+  analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
   delay(50);
-  digitalWrite(direction1A, LOW), digitalWrite(direction1B, HIGH);
-  digitalWrite(direction2A, HIGH), digitalWrite(direction2B, LOW);
+  digitalWrite(direction1A, LOW), digitalWrite(direction1B, LOW);
+  digitalWrite(direction2A, HIGH), digitalWrite(direction2B, HIGH);
   analogWrite(speedControlA, 100), analogWrite(speedControlB, 100);
   delay(500);
 }
+
 void locateOpponent(long distanceL, long distanceC, long distanceR){
   /* This code will spin Motor 1 clockwise and Motor 2 clockwise. Since all motors
    * are created the same, and not as left/right, they will have to be coded opposite of each other 
@@ -239,10 +281,12 @@ void locateOpponent(long distanceL, long distanceC, long distanceR){
    * value that analogWrite can output, so that is 100% speed. I put in a delay so I don't exhaust the motors
    * with quick direction changes.
    */
-  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, HIGH);
-  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
+   /*
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
   analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
   delay(20);
+  */
   /*  Here I defined a range that the robot will be sensing in. If the ultrasonic sensors
    *  doesn't detect something within 2 feet of it (~60 cm) of them, then there is nothing there.
    *  However, if there is something there, the recorded distance will be shorter than the range and
@@ -258,23 +302,22 @@ void locateOpponent(long distanceL, long distanceC, long distanceR){
    } else if (distanceC > range && distanceL <= range && distanceR > range){
     // Turn left, this comparison means the left sensor has detected robot, so Sumo will turn towards it.
     // The turn is done by changing the speed of the wheel rotation. As one spins faster, it covers more distance so the Sumo will turn.
-    digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
-    digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
+    digitalWrite(direction1A, LOW), digitalWrite(direction1B, HIGH);
+    digitalWrite(direction2A, HIGH), digitalWrite(direction2B, LOW);
     analogWrite(speedControlA, 100), analogWrite(speedControlB, 255);
    } else if (distanceC > range && distanceL > range && distanceR <= range){
     // Turn right, this comparison means the right sensor has detected a robot
     digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
-    digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH;
+    digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
     analogWrite(speedControlA, 255), analogWrite(speedControlB, 100);
    } else {
     
    }
 }
 void ramOpponent(){
-  // Drive directly towards other robot by rotating wheels together at full speed
-  // Note that roational directions are opposite to maintain physical symmetry.
-  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
-  digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
+  // Drive directly towards other robot by rotating wheels together at full speed.
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, HIGH);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
   analogWrite(speedControlA, 255), analogWrite(speedControlB, 255);
 }
 /* This function is called on by the distance converter in the void loop().
