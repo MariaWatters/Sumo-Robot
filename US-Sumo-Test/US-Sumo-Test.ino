@@ -1,3 +1,5 @@
+//Test 1.03
+
 /* This is the complete code for the Arduino-based Sumo Robot. I wrote it based on my 
  *  understanding of each compmonent, logic, and physics. 
  *  Theory Section (including notes before definitions):
@@ -81,12 +83,14 @@ void halt();  // If the front IR sensor detects a color change
 void locateOpponent();
 void ramOpponent();
 // Each side must have its own duration and corresponding distance.
-long durationL, durationC, durationR, distanceL, distanceC, distanceR;
+long durationC, distanceC;
 long microsecondsToCentimeters(long microseconds);
 /* This function is used to simplify the functions that determine distance for every ultrasonic sensor.
  * the trigPin and echoPin are ints because the pins are numbered and those numbers are what is passed to the function,
  * under the given name for our understanding of what's happening. */
 long senseDistance(int trigPin, int echoPin);
+bool objectPresent(long distanceC);
+bool objectDetected;
 
 void setup() {
   /* Here I defined what type of pin each one was, output means the Arduino sends out a 
@@ -106,9 +110,7 @@ void setup() {
 void loop() {
   /* These call upon the senseDistance function for each side, one at a time, so the sound waves don't interfer and so the code
    * doesn't get out of sync trying to do all three at the same time, as it was originally. This will happen in a matter of milliseconds. */
-  distanceL = senseDistance(trigPinL, echoPinL);
   distanceC = senseDistance(trigPinC, echoPinC);
-  distanceR = senseDistance(trigPinR, echoPinR); 
   
   /* This calls on the function that takes the measured distances and sees if they compare to a given range.
    * This way Sumo will know if there is an object between it and the determined range. */
@@ -156,18 +158,28 @@ void locateOpponent(long distanceC){
    *  I am putting a cap on the range of the sensors so people standing outside of the arena will not 
    *  interfer with Sumo and its ability to find the other robot; this is where the int range comes from. 
    */
-   int range = 60;
-   if (distanceC <= range){
+   objectPresent(distanceC);
+   
+   if (objectDetected==true){
     // The center sensor has detected the other robot so full power straight ahead!
      ramOpponent();
    } else {
     
    }
 }
+bool objectPresent(long distanceC){
+  int range = 30;
+  if(distanceC <= range){
+    return objectDetected = true;
+  } else {
+    
+  }
+  
+}
 void ramOpponent(){
   // Drive directly towards other robot by rotating wheels together at full speed.
-  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, HIGH);
-  digitalWrite(direction2A, LOW), digitalWrite(direction2B, LOW);
+  digitalWrite(direction1A, HIGH), digitalWrite(direction1B, LOW);
+  digitalWrite(direction2A, LOW), digitalWrite(direction2B, HIGH);
   analogWrite(speedControlA, 100), analogWrite(speedControlB, 100);
 }
 /* This function is called on by the distance converter in the void loop().
