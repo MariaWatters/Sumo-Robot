@@ -1,4 +1,4 @@
-//Test 2.2
+//Test 2.3
 
 /* This is the complete code for the Arduino-based Sumo Robot. I wrote it based on my 
  *  understanding of each compmonent, logic, and physics. 
@@ -45,8 +45,8 @@ int direction2B = 4;
  * interfer with Sumo and its ability to find the other robot; this is where the max and min distance 
  * comes from. I gave it a min distance for testing purposes (don't just ram something all the time).
  */
-#define trigPinC 11
-#define echoPinC 10
+#define trigPinC 10
+#define echoPinC 11
 int maxDistance = 60;
 int minDistance = 2;
 
@@ -87,6 +87,9 @@ void loop() {
   /* I define the distance of the center sensor to be the distance (in cm) that the sonar ping gives. 
    * sonar.ping_cm() tells the sensor to both send out a signal and wait for a response, a condensed and
    * percise version of my earlier code. */
+  // I added a high delay so only one ping is sent a second to double check its not the sensor.
+  delay(1000);
+  
   distanceC = sonar.ping_cm();
   Serial.print("Distance: ");
   Serial.print(distanceC); 
