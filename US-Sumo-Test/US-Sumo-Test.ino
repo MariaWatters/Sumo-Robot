@@ -39,16 +39,18 @@ int direction2B = 4;
  * L = left side, C = center, R = right side. The sensors work by sending out a
  * sound wave (with the 'trig pin') and then measuring the time it takes for the
  * wave to return to the sensor, which is read by the 'echo pin.'
- * I also defined the range of the sensors as between 2 cm and 100 cm.
+ * I also defined the range of the sensors as between 9 cm and 100 cm.
  * Since the sensors have a range of 4 meters (400 cm) and the arena is smaller than 4 meters in diameter, 
  * I am putting a cap on the range of the sensors so people standing outside of the arena will not 
  * interfer with Sumo and its ability to find the other robot; this is where the max and min distance 
  * comes from. I gave it a min distance for testing purposes (don't just ram something all the time).
+ * The minimum range is 10 cm because the is the distance from the sensor to the tip of the ramp, plus 1 cm
+ * for good measure.
  */
 #define trigPinC 10
 #define echoPinC 11
 int maxDistance = 60;
-int minDistance = 2;
+int minDistance = 10;
 
 /* Here I defined the functions that will hold the code for what the Sumo will do if the 
  *  front or back IR sensor detects a color that is not the arena color. I also defined a  
@@ -87,8 +89,8 @@ void loop() {
   /* I define the distance of the center sensor to be the distance (in cm) that the sonar ping gives. 
    * sonar.ping_cm() tells the sensor to both send out a signal and wait for a response, a condensed and
    * percise version of my earlier code. */
-  // I added a high delay so only one ping is sent a second to double check its not the sensor.
-  delay(1000);
+  // After discovering it was a faulty sensor and swapping it out, I lowered the delay for "shove" tests
+  delay(50);
   
   distanceC = sonar.ping_cm();
   Serial.print("Distance: ");
