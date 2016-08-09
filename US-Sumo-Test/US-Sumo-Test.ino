@@ -47,8 +47,8 @@ int direction2B = 4;
  * The minimum range is 10 cm because the is the distance from the sensor to the tip of the ramp, plus 1 cm
  * for good measure.
  */
-#define trigPinC 10
-#define echoPinC 11
+#define trigPinL 13
+#define echoPinL 12
 int maxDistance = 60;
 int minDistance = 10;
 
@@ -70,15 +70,15 @@ void ramOpponent();
  * Note that you must use correct pins you want to use with this function and it is off the type 
  * NewPing, kind of like 'Bool' is a unique function type.
  */
-NewPing sonar(trigPinC, echoPinC, maxDistance);
-int distanceC;
+NewPing sonar(trigPinL, echoPinL, maxDistance);
+int distanceL;
   
 void setup() {
   Serial.begin(9600);
   /* Here I defined what type of pin each one was, output means the Arduino sends out a 
    * signal via that pin, while input means the Arduino recieves a signal via that pin.
    */
-  pinMode(trigPinC, OUTPUT), pinMode(echoPinC, INPUT);
+  pinMode(trigPinL, OUTPUT), pinMode(echoPinL, INPUT);
   
   pinMode(speedControlA, OUTPUT), pinMode(speedControlB, OUTPUT);
   pinMode(direction1A, OUTPUT), pinMode(direction1B, OUTPUT);
@@ -90,22 +90,22 @@ void loop() {
    * sonar.ping_cm() tells the sensor to both send out a signal and wait for a response, a condensed and
    * percise version of my earlier code. */
   // After discovering it was a faulty sensor and swapping it out, I lowered the delay for "shove" tests
-  delay(50);
+  delay(1000);
   
-  distanceC = sonar.ping_cm();
+  distanceL = sonar.ping_cm();
   Serial.print("Distance: ");
-  Serial.print(distanceC); 
+  Serial.print(distanceL); 
   Serial.print("cm.");
   Serial.print('\n');
   /* This calls on the function that takes the measured distances and sees if they compare to a given range.
    * This way Sumo will know if there is an object between it and the determined range. */
-  locateOpponent(distanceC);
+  locateOpponent(distanceL);
 }
 
-void locateOpponent(int distanceC){
+void locateOpponent(int distanceL){
   
    
-   if (distanceC > minDistance){
+   if (distanceL > minDistance){
     // The center sensor has detected the other robot so full power straight ahead!
      ramOpponent();
    } else {
